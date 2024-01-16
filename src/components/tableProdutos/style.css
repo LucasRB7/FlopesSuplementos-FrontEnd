@@ -1,0 +1,35 @@
+.tableMain{
+    color: green;
+    width: 1000px;
+    height: 70vh;
+    justify-content: center;
+    align-items: center;
+
+    font-size: 16px;
+}
+.btn-topo{
+    display: flex;
+    justify-content: space-between;
+    min-width: 220px;
+    margin: 0px;
+}
+.topo{
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    color: rgb(2, 193, 2);
+    text-shadow: 5px 5px 5px green;
+    font-size: 25px;
+}
+.categoria-cadastro{
+    display: grid;
+    grid-template-columns: 1fr 1fr ;
+}
+.detalhes-valores{
+    display: grid;
+    grid-template-columns: 1fr 1fr ;
+    gap: 10px;
+}
