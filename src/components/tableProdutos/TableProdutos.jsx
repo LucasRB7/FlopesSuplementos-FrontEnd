@@ -5,18 +5,17 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Toast } from 'primereact/toast';
 import { Button } from 'primereact/button';
-import { FileUpload } from 'primereact/fileupload';
-import { Rating } from 'primereact/rating';
 import { Toolbar } from 'primereact/toolbar';
-import { InputTextarea } from 'primereact/inputtextarea';
 import { RadioButton } from 'primereact/radiobutton';
 import { InputNumber } from 'primereact/inputnumber';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
-import { Tag } from 'primereact/tag';
+import 'primeicons/primeicons.css';
 import axios from 'axios';
 
+
 import './style.css'
+//import UploadCloud from '../UploadCloudnary/UploadCloud';
 
 export default function ProductsDemo() {
     let emptyProduct = {
@@ -30,7 +29,7 @@ export default function ProductsDemo() {
         img64: null
     };
 
-    const [products, setProducts] = useState(null);
+    const [products, setProducts] = useState([{ ...emptyProduct }]);
     const [categoria, setCategoria] = useState(null)
     const [productDialog, setProductDialog] = useState(false);
     const [deleteProductDialog, setDeleteProductDialog] = useState(false);
@@ -41,6 +40,7 @@ export default function ProductsDemo() {
     const [globalFilter, setGlobalFilter] = useState(null);
     const toast = useRef(null);
     const dt = useRef(null);
+    //const [uploadedImage, setUploadedImage] = useState(null);
 
     useEffect(() => {
         buscarProdutos();
@@ -48,61 +48,84 @@ export default function ProductsDemo() {
     }, []);
 
     //#region Produtos
-    const buscarProdutos = () =>{
+    const buscarProdutos = () => {
         axios({
-            method:'get',
-            url:'http://localhost:3000/produto/'
-        }).then((res)=> setProducts(res.data))
-          .catch((err)=>console.log(err))
+            method: 'get',
+            url: 'http://localhost:3000/produto/'
+        }).then((res) => setProducts(res.data))
+            .catch((err) => {
+                if (err.code == "ERR_NETWORK") {
+                    toast.current.show({ severity: 'error', summary: 'Erro nos produtos: API FORA!', life: 8000 });
+                }
+            })
     }
-    const criarProduto = (prod) =>{
+    const criarProduto = (prod) => {
         axios({
-            method:'post',
-            url:'http://localhost:3000/produto/cadastro',
-            data:prod
-        }).then((res)=> {
-            setProducts(res.data);
-            setProduct(emptyProduct);
-            buscarProdutos()
-            toast.current.show({severity:'success', summary:'Produto criado com sucesso!'});
-        })
-     .catch((err)=>{
-        console.log(err)
-        toast.current.show({severity:'Error', summary:'Erro ao criar o produto! Possivel problema: API FORA', life: 8000});
-    })
-    }
-    const editarProduto = (prod ,id) =>{
-        axios({
-            method:'patch',
-            url:`http://localhost:3000/produto/update/${id}`,
+            method: 'post',
+            url: 'http://localhost:3000/produto/cadastro',
             data: prod
-        }).then((res)=> {       
+        }).then(() => {
+            toast.current.show({ severity: 'success', summary: 'Produto criado com sucesso!' });
             buscarProdutos()
-            toast.current.show({severity:'success', summary:'Produto atualizado com sucesso!', life: 3000});    
         })
-   .catch((err)=>{
-        console.log(err)
-        toast.current.show({severity:'Error', summary:'Erro ao atualizar o produto! Possivel problema: API FORA', life: 8000});
-   })}
-   const apagarProduto = (id) =>{
-    axios({
-        method:'delete',
-        url:`http://localhost:3000/produto/delete/${id}`
-    }).then((res)=> {
-        buscarProdutos()
-        toast.current.show({severity:'success', summary:'Produto apagado com sucesso!', life: 3000});
-    })
-   }
+            .catch((err) => {
+                if (err.code == "ERR_NETWORK") {
+                    toast.current.show({ severity: 'error', summary: 'Erro ao salvar o produto! Possivel problema: API FORA', life: 8000 });
+                }
+            })
+    }
+    const editarProduto = (prod, id) => {
+        axios({
+            method: 'patch',
+            url: `http://localhost:3000/produto/update/${id}`,
+            data: prod
+        }).then(() => {
+            buscarProdutos()
+            toast.current.show({ severity: 'success', summary: 'Produto atualizado com sucesso!', life: 3000 });
+        })
+            .catch((err) => {
+                if (err.code == "ERR_NETWORK") {
+                    toast.current.show({ severity: 'error', summary: 'Erro ao editar o produto! Possivel problema: API FORA', life: 8000 });
+                }
+            })
+    }
+    const apagarProduto = (id) => {
+        axios({
+            method: 'delete',
+            url: `http://localhost:3000/produto/delete/${id}`
+        }).then(() => {
+            buscarProdutos()
+            toast.current.show({ severity: 'success', summary: 'Produto apagado com sucesso!', life: 3000 });
+        }).catch((err) => {
+            console.log(err)
+            if (err.code == 'ERR_NETWORK') {
+                toast.current.show({ severity: 'error', summary: 'Erro ao apagar o produto! Possivel problema: API FORA', life: 8000 });
+            } else if (err.code == 'ERR_BAD_RESPONSE') {
+                toast.current.show({ severity: 'error', summary: 'Erro ao apagar o produto! Possivel problema: Produto associado a uma venda', life: 8000 });
+            }
+        })
+    }
+
+    //    const onUploadImg = (e) => {
+    //     // Supondo que queremos apenas a primeira imagem
+    //     const file = e.files[0];
+
+    //     axios({
+    //         method: 'post',
+    //         url: 'http://localhost:3000/produto/cadastro/upload',
+    //         data: file
+    //     })
+    //     }
 
     //#endregion
 
     //#region Categorias
-    const buscarCategorias = () =>{
+    const buscarCategorias = () => {
         axios({
-            method:'get',
-            url:'http://localhost:3000/categorias/'
-        }).then((res)=> setCategoria(res.data))
-        .catch((err)=>console.log(err))
+            method: 'get',
+            url: 'http://localhost:3000/categorias/'
+        }).then((res) => setCategoria(res.data))
+            .catch((err) => console.log(err))
     }
     //#endregion
 
@@ -139,9 +162,7 @@ export default function ProductsDemo() {
             if (product.produto_id) {
                 editarProduto(_product, product.produto_id)
             } else {
-                _product.img64 = 'product-placeholder.svg';
                 criarProduto(_product)
-                
             }
             setProductDialog(false);
         }
@@ -173,11 +194,11 @@ export default function ProductsDemo() {
     };
 
     const deleteSelectedProducts = () => {
-        selectedProducts.map((e)=>{
+        selectedProducts.map((e) => {
             apagarProduto(e.produto_id)
         })
         setDeleteProductsDialog(false);
-        setSelectedProducts(null);        
+        setSelectedProducts(null);
     };
 
     const onCategoryChange = (e) => {
@@ -208,14 +229,14 @@ export default function ProductsDemo() {
     const leftToolbarTemplate = () => {
         return (
             <div className="btn-topo">
-                <Button label="NOVO" icon="pi pi-plus" severity="success" onClick={openNew} />
-                <Button label="APAGAR" icon="pi pi-trash" severity="danger" onClick={confirmDeleteSelected} disabled={!selectedProducts || !selectedProducts.length} />
+                <Button label="NOVO" icon="pi pi-plus" style={{backgroundColor:'#6ABD6E', color:'white'}} onClick={openNew} />
+                <Button label="APAGAR" icon="pi pi-trash" style={{backgroundColor:'red', color:'white'}} onClick={confirmDeleteSelected} disabled={!selectedProducts || !selectedProducts.length} />
             </div>
         );
     };
 
     const rightToolbarTemplate = () => {
-        return <Button label="Export" icon="pi pi-upload" className="p-button-help" onClick={exportCSV} />;
+        return <Button label="Export" icon="pi pi-upload" style={{backgroundColor:'purple', color:'white'}} onClick={exportCSV} />;
     };
 
     const imageBodyTemplate = (rowData) => {
@@ -237,8 +258,10 @@ export default function ProductsDemo() {
     const actionBodyTemplate = (rowData) => {
         return (
             <React.Fragment>
-                <Button icon="pi pi-pencil" rounded outlined className="mr-2" onClick={() => editProduct(rowData)} />
-                <Button icon="pi pi-trash" rounded outlined severity="danger" onClick={() => confirmDeleteProduct(rowData)} />
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Button icon="pi pi-pencil" style={{ color: 'green' }} rounded outlined className="mr-2" onClick={() => editProduct(rowData)} />
+                    <Button icon="pi pi-trash" rounded outlined severity="danger" onClick={() => confirmDeleteProduct(rowData)} />
+                </div>
             </React.Fragment>
         );
     };
@@ -294,23 +317,25 @@ export default function ProductsDemo() {
                 <Toolbar className="mb-4" left={leftToolbarTemplate} right={rightToolbarTemplate}></Toolbar>
 
                 <DataTable className='tableMain' ref={dt} value={products} selection={selectedProducts} onSelectionChange={(e) => setSelectedProducts(e.value)}
-                        dataKey="produto_id"  paginator rows={10} rowsPerPageOptions={[5, 10]}
-                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                        currentPageReportTemplate="Mostrando {first} até {last} de {totalRecords} produtos" globalFilter={globalFilter} header={header}>
+                    dataKey="produto_id" paginator rows={5} rowsPerPageOptions={[5, 10]}
+                    paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                    currentPageReportTemplate="Mostrando {first} até {last} de {totalRecords} produtos" globalFilter={globalFilter} header={header}>
                     <Column selectionMode="multiple" exportable={false}></Column>
-                    <Column field="produto_id" header="Cod" sortable style={{ minWidth: '10%', textAlign:'center'}}></Column>
+                    <Column field="produto_id" header="Cod" sortable style={{ minWidth: '10%', textAlign: 'center' }}></Column>
                     <Column field="produto_nome" header="Nome do Produto" sortable style={{ minWidth: '20%' }}></Column>
-                    <Column field="img64" header="Imagem" body={imageBodyTemplate} style={{minWidth: '10%', textAlign:'center'}}></Column>
-                    <Column field="preco_venda" header="Preco de Venda" body={priceBodyTemplate} sortable style={{ minWidth: '10%', textAlign:'center' }}></Column>
-                    <Column field="categoria_id" header="Categoria" sortable style={{ minWidth: '10%' , textAlign:'center' }}></Column>
-                    <Column field="quantidade" header="Estoque" sortable style={{ minWidth: '10%', textAlign:'center' }}></Column>
+                    <Column field="img64" header="Imagem" body={imageBodyTemplate} style={{ minWidth: '10%', textAlign: 'center' }}></Column>
+                    <Column field="preco_venda" header="Preco de Venda" body={priceBodyTemplate} sortable style={{ minWidth: '10%', textAlign: 'center' }}></Column>
+                    <Column field="categoria_id" header="Categoria" sortable style={{ minWidth: '10%', textAlign: 'center' }}></Column>
+                    <Column field="quantidade" header="Estoque" sortable style={{ minWidth: '10%', textAlign: 'center' }}></Column>
                     {/* <Column field="inventoryStatus" header="Status" body={statusBodyTemplate} sortable style={{ minWidth: '12rem' }}></Column> */}
                     <Column body={actionBodyTemplate} exportable={false} style={{ minWidth: '10%' }}></Column>
                 </DataTable>
             </div>
 
             <Dialog visible={productDialog} style={{ width: '32rem' }} breakpoints={{ '960px': '75vw', '641px': '90vw' }} header="Detalhes do Produto" modal className="p-fluid" footer={productDialogFooter} onHide={hideDialog}>
-                {product.image && <img src={`https://primefaces.org/cdn/primereact/images/product/${product.image}`} alt={product.image} className="product-image block m-auto pb-3" />}
+                <div>
+                    {/* <UploadCloud/> */}
+                </div>
                 <div className="field">
                     <label htmlFor="name" className="font-bold">
                         Nome do Produto
@@ -318,19 +343,19 @@ export default function ProductsDemo() {
                     <InputText id="name" value={product.produto_nome} onChange={(e) => onInputChange(e, 'produto_nome')} required autoFocus className={classNames({ 'p-invalid': submitted && !product.name })} />
                     {submitted && !product.produto_nome && <small className="p-error">Nome Obrigatório</small>}
                 </div>
-                
+
                 <label>Categoria</label>
                 <div className="categoria-cadastro">
-                    {categoria ? categoria.map((c) =>{
+                    {categoria ? categoria.map((c) => {
                         return (
                             <div key={c.categoria_id}>
                                 <div >
                                     <RadioButton value={c.categoria_id} name="categoria" onChange={onCategoryChange} checked={product.categoria_id === c.categoria_id} />
                                     <label>{c.categoria_nome}</label>
-                                </div>                                
+                                </div>
                             </div>
                         )
-                    }) : <span> 0 Categorias cadastradas ou sem retorno da api</span>  }
+                    }) : <span> 0 Categorias cadastradas ou sem retorno da api</span>}
                 </div>
 
                 <div className="formgrid grid">
@@ -339,13 +364,13 @@ export default function ProductsDemo() {
                             <label htmlFor="Preço" className="font-bold">
                                 Preço de Venda
                             </label>
-                            <InputNumber id="Preco de Venda" value={product.preco_venda} onValueChange={(e) => onInputNumberChange( e , 'preco_venda')} mode="currency" currency="BRL" locale="pt-BR" />
+                            <InputNumber id="Preco de Venda" value={product.preco_venda} onValueChange={(e) => onInputNumberChange(e, 'preco_venda')} mode="currency" currency="BRL" locale="pt-BR" />
                         </div>
                         <div className="field col">
                             <label htmlFor="Preço de Compra" className="font-bold">
                                 Preço de Compra
                             </label>
-                            <InputNumber id="Preco de Compra" value={product.preco_compra} onValueChange={(e) => onInputNumberChange( e , 'preco_compra')} mode="currency" currency="BRL" locale="pt-BR" />
+                            <InputNumber id="Preco de Compra" value={product.preco_compra} onValueChange={(e) => onInputNumberChange(e, 'preco_compra')} mode="currency" currency="BRL" locale="pt-BR" />
                         </div>
                     </div>
                     <div className='detalhes-valores'>
@@ -359,9 +384,9 @@ export default function ProductsDemo() {
                             <label htmlFor="Data de Vencimento" className="font-bold">
                                 Data de Vencimento
                             </label>
-                            <InputText id="Data de Vencimento" value={product.data_vencimento}  onChange={(e) => onInputChange(e, 'data_vencimento')} />         
+                            <InputText id="Data de Vencimento" value={product.data_vencimento} onChange={(e) => onInputChange(e, 'data_vencimento')} />
                         </div>
-                    </div>                    
+                    </div>
                 </div>
             </Dialog>
 
@@ -384,5 +409,5 @@ export default function ProductsDemo() {
             </Dialog>
         </div>
     );
-                    
+
 }
